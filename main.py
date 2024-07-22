@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 
 from architecture import CNN
-from utils import set_seeds, select_device
+from utils import set_seeds, select_device, evaluate_model, plot
 from dataset import ImagesDataset
 
 
@@ -17,7 +17,8 @@ def main(
         results_path,
         network_config: dict,
         learning_rate: int,
-        weight_decay: int
+        weight_decay: int,
+        num_epochs: int
 ):
     set_seeds(42)
 
@@ -44,7 +45,9 @@ def main(
 
     num_validation = int(n_samples / 5)
     num_test = int(n_samples / 5)
-    training_indices, validation_indices, test_indices = np.array_split(shuffled_indices,[n_samples - num_validation - num_test, n_samples - num_test])
+    training_indices, validation_indices, test_indices = np.array_split(shuffled_indices,
+                                                                        [n_samples - num_validation - num_test,
+                                                                         n_samples - num_test])
 
     training_set = Subset(dataset, training_indices.tolist())
     augmented_training_set = Subset(augmented_dataset, training_indices.tolist())
@@ -63,4 +66,99 @@ def main(
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
 
+    best_val_loss = float('inf')
+    patience = 10
+    epochs_no_improve = 0
+    train_losses = []
+    val_losses = []
 
+    trained_model = os.path.join(results_path, "model.pth")
+    torch.save(model.state_dict(), trained_model)
+
+    for epoch in range(num_epochs):
+        model.train()
+        running_train_loss = 0.0
+        for data in tqdm(augmented_training_loader, desc="Training", position=0, leave=False):
+            inputs, targets, *_ = data
+            inputs, targets = inputs.to(device), targets.to(device)
+
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            loss.backward()
+
+            optimizer.step()
+            running_train_loss += loss.item()
+
+        epoch_train_loss = running_train_loss / len(augmented_training_loader)
+        train_losses.append(epoch_train_loss)
+
+        model.eval()
+        running_val_loss = 0.0
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for data in tqdm(validation_loader, desc="Evaluating", position=0, leave=False):
+                inputs, targets, *_ = data
+                inputs, targets = inputs.to(device), targets.to(device)
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+                running_val_loss += loss.item()
+                _, predicted = torch.max(outputs.data, 1)
+                total += targets.size(0)
+                correct += (predicted == targets).sum().item()
+
+        epoch_val_loss = running_val_loss / len(validation_loader)
+        val_losses.append(epoch_val_loss)
+
+        val_accuracy = 100 * correct / total
+        print(
+            f'Epoch {epoch + 1}/{num_epochs}, Train Loss: {epoch_train_loss:.4f}, Val loss: {epoch_val_loss:.4f}, Val Accuracy: {val_accuracy:.2f}%')
+
+        scheduler.step(epoch_val_loss)
+
+        if epoch_val_loss < best_val_loss:
+            best_val_loss = epoch_val_loss
+            epochs_no_improve = 0
+            torch.save(model.state_dict(), trained_model)
+        else:
+            epochs_no_improve += 1
+
+        if epochs_no_improve >= patience:
+            print('Early stopping!')
+            break
+
+    print('Training finished')
+
+    plot(train_losses, val_losses, results_path)
+
+    print(f"Computing scores for best model")
+    model.load_state_dict(torch.load(trained_model))
+
+    train_loss = evaluate_model(model, training_loader, criterion, device, 'training set')
+    val_loss = evaluate_model(model, validation_loader, criterion, device, 'validation set')
+    test_loss = evaluate_model(model, test_loader, criterion, device, 'test set')
+
+    print(f"Scores:")
+    print(f"training loss:   {train_loss}")
+    print(f"validation loss: {val_loss}")
+    print(f"test loss:       {test_loss}")
+
+    with open(os.path.join(results_path, "results.txt"), "w") as rf:
+        print(f"Scores:", file=rf)
+        print(f"training loss:   {train_loss}", file=rf)
+        print(f"validation loss: {val_loss}", file=rf)
+        print(f"test loss:       {test_loss}", file=rf)
+
+
+if __name__ == "__main__":
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("config_file", type=str, help="working_config.json")
+    args = parser.parse_args()
+
+    with open(args.config_file) as cf:
+        config = json.load(cf)
+    main(**config)
