@@ -14,7 +14,10 @@ from dataset import ImagesDataset
 
 
 def main(
-        results_path
+        results_path,
+        network_config: dict,
+        learning_rate: int,
+        weight_decay: int
 ):
     set_seeds(42)
 
@@ -52,4 +55,12 @@ def main(
     augmented_training_loader = DataLoader(augmented_training_set, shuffle=True, batch_size=32)
     validation_loader = DataLoader(validation_set, shuffle=False, batch_size=32)
     test_loader = DataLoader(test_set, shuffle=True, batch_size=32)
+
+    model = CNN(**network_config).to(device)
+
+    criterion = nn.CrossEntropyLoss()
+
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+
 
