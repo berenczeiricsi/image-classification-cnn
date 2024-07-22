@@ -8,15 +8,15 @@ The classifier block performs adaptive average pooling to a 1x1 spatial dimensio
 applies a ReLU activation function, uses dropout to prevent overfitting, and finally maps the data to the desired output shape through another fully connected layer.
 
 ### Main Script
-In the `main.py`file the dataset is loaded once without and once with augmentation. Four sets are create with data loaders for all of them. A separate training set with augmentation is create only for training.
-For training, the `CrossEntropyLoss` function is used with the `AdamW` optimizer and with learning rate scheduler for adjusting the learning rate during training to optimize model convergence.
+In the `main.py`file the dataset is loaded once without and once with augmentation. Four sets are created with data loaders for all of them. A separate training set with augmentation is created only for training.
+For training and evaluation, the `CrossEntropyLoss` function is used with the `AdamW` optimizer and with learning rate scheduler for adjusting the learning rate during training to optimize model convergence.
 
-The model is trained for a number of epochs, an in each epoch the model is validated on the validation set. 
+The model is trained for a number of epochs, and in each epoch the model is validated on the validation set. 
 
-After the training finishes, a final evaluation is conducted on all sets to test the generalization of the model.
+After the training is finished, a final evaluation is conducted on all sets to test the generalization of the model.
 
 ### Example usage
-1. Add or download images to the `training_data` folder.
+1. Add or download images to a `training_data` folder.
 2. Open up a terminal and navigate to the project directory. Then run the following line:
 
 ```
