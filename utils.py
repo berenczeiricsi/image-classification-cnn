@@ -6,12 +6,23 @@ from tqdm import tqdm
 
 
 def set_seeds(seed: int):
+    """
+    A utility function for setting the seed for reproducibility
+
+    :param seed: An arbitrary integer for the seed
+    :return: None
+    """
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.mps.manual_seed(seed)
 
 
 def select_device():
+    """
+    Utility function for selecting the target device
+
+    :return: Target device
+    """
     if torch.backends.mps.is_available():
         device = torch.device('mps')
     elif torch.cuda.is_available():
@@ -28,6 +39,16 @@ def evaluate_model(model: torch.nn.Module,
                    device: torch.device,
                    dataset: str
                    ):
+    """
+     Utility function for evaluating the CNN.
+
+    :param model: The model which should be validated
+    :param dataloader: A data loader for the evaluation set
+    :param loss_fn: The loss function which should be used
+    :param device: A target device
+    :param dataset: The dataset on which the model should be evaluated on
+    :return: The evaluation loss
+    """
     model.eval()
     eval_loss = 0.0
     with torch.no_grad():
@@ -45,6 +66,14 @@ def evaluate_model(model: torch.nn.Module,
 
 
 def plot(train_losses, eval_losses, path):
+    """
+    Utility function for plotting the results of the training.
+
+    :param train_losses: The losses during training
+    :param eval_losses: The losses during evaluation
+    :param path: Path to save the plot
+    :return: None
+    """
     epochs = range(1, len(train_losses) + 1)
 
     plt.figure(figsize=(10, 5))
