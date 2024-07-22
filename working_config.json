@@ -1,0 +1,11 @@
+{
+  "results_path": "results",
+  "learning_rate": 1e-3,
+  "weight_decay": 1e-4,
+  "num_epochs": 100,
+  "network_config": {
+    "input_shape": 1,
+    "hidden_units": 32,
+    "output_shape": 20
+  }
+}
