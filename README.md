@@ -24,8 +24,6 @@ python main.py working_config.json
 ```
 
 ### Structure
-Having a tree with the files and folders is nice to get an overview.
-However, this is sometimes tedious to maintain and omitted.
 ```
 example_project
 |- architectures.py
