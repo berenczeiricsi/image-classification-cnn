@@ -1,4 +1,4 @@
-# Image Classification (Python II Final Project)
+# Image Classification
 This project is an example ML project and contains a CNN that is trained to predict the class of an image out of 20 classes.
 The input images used are images, which have been converted to grayscale and resized to 100 pixels.
 
